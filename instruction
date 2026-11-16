@@ -1,0 +1,19 @@
+# Package this machine's ComfyUI install into a Comfy build
+
+Turn the ComfyUI install on this machine into a build on the Comfy developer platform, then cut a release of it. Run this on the machine that holds ComfyUI, its models and its custom nodes.
+
+The developer has called this build: build-cm6pjr
+
+## Read the skill, then follow it
+
+```bash
+pip install -U comfy-cli
+comfy skills show comfy-build
+```
+
+The skill is the procedure: how to scan the install, what to pin, how to record the model and node policy, what to disclose before a cut, when to sign in, and what to do when a build fails. Follow it rather than guessing an invocation.
+
+## If you cannot run any of this
+
+The developer can build in the browser instead:
+https://platform.comfy.org/profile/builds/new?step=import
