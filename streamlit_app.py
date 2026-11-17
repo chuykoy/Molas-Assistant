@@ -1,59 +1,67 @@
-import streamlit as st
-from groq import Groq
-from gtts import gTTS
+ import streamlit as st
+from google import genai
 
-st.set_page_config(page_title="Molas AI Mobile", page_icon="🤖", layout="centered")
-
-st.markdown("""
-    <style>
-    .avatar-container { display: flex; justify-content: center; margin-bottom: 20px; }
-    .pulse-avatar {
-        width: 100px; height: 100px; border-radius: 50%;
-        background: linear-gradient(45deg, #ff4b4b, #ff8f00);
-        display: flex; justify-content: center; align-items: center;
-        font-size: 50px; animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% { transform: scale(0.95); }
-        70% { transform: scale(1); }
-        100% { transform: scale(0.95); }
-    }
-    </style>
-    <div class="avatar-container"><div class="pulse-avatar">🤖</div></div>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="Molas AI Assistant", page_icon="🤖")
 
 st.title("🗣️ Molas AI Assistant")
 
-if "GROQ_API_KEY" not in st.secrets:
-    st.error("Ilagay muna ang GROQ_API_KEY sa Streamlit Secrets.")
-    st.stop()
+# Sidebar para sa mga settings at reset button
+with st.sidebar:
+  st.header("⚙️ Mga Setting")
+  if st.button("🗑️ I-clear ang Chat History", use_container_width=True):
+    st.session_state["messages"] = []
+    st.rerun()
 
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+  st.info(
+    "Tip: Pwede mong i-reset ang usapan anumang oras gamit ang button sa"
+    " itaas."
+  )
+
+# Kunin ang API key mula sa Streamlit Secrets
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [
-        {"role": "system", "content": "Ikaw si Molas AI, isang matalinong personal assistant na nagsasalita sa Tagalog."}
-    ]
+  st.session_state["messages"] = []
 
-for message in st.session_state["messages"]:
-    if message["role"] != "system":
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+# Ipakita ang mga lumang messages
+for msg in st.session_state["messages"]:
+  with st.chat_message(msg["role"]):
+    st.markdown(msg["content"])
 
+# Input ng user
 if prompt := st.chat_input("Mag-type kay Molas AI..."):
-    st.session_state["messages"].append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+  st.session_state["messages"].append({"role": "user", "content": prompt})
+  with st.chat_message("user"):
+    st.markdown(prompt)
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=st.session_state["messages"]
-    )
-    ai_response = response.choices[0].message.content
+  with st.chat_message("assistant"):
+    with st.spinner("Nag-iisip si Molas AI..."):
+      # System instruction para sa personalidad ng AI
+      system_instruction = (
+          "Ikaw si Molas AI, isang matulungin, magalang, at matalinong AI"
+          " assistant na bihasa magsalita sa Tagalog at Taglish."
+      )
 
-    st.session_state["messages"].append({"role": "assistant", "content": ai_response})
-    with st.chat_message("assistant"):
-        st.markdown(ai_response)
-        tts = gTTS(text=ai_response, lang='tl')
-        tts.save("molas_voice.mp3")
-        st.audio("molas_voice.mp3", format="audio/mp3", autoplay=True)
+      # Buuin ang conversation history para sa Gemini
+      chat_history = []
+      for m in st.session_state["messages"]:
+        role = "user" if m["role"] == "user" else "model"
+        chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
+
+      # Gamitin ang chats.create para mas maayos ang takbo ng conversation
+      chat = client.chats.create(
+          model="gemini-2.5-flash",
+          history=chat_history[:-1],  # Lahat maliban sa pinakahuling tanong
+      )
+
+      response = chat.send_message(
+          prompt,
+          config={
+              "system_instruction": system_instruction,
+          },
+      )
+
+      st.markdown(response.text)
+      st.session_state["messages"].append(
+          {"role": "assistant", "content": response.text}
+      )
