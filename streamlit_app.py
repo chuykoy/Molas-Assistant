@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 from google import genai
 from google.genai.errors import APIError
 
@@ -105,8 +105,6 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
         attempts = [
             ("gemini-2.5-flash", True),
             ("gemini-2.5-flash-lite", False),
-            ("gemini-3.0-flash", True),
-            ("gemini-3.0-flash", False),
         ]
         full_reply = None
         last_error = ""
