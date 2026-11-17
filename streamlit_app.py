@@ -144,5 +144,4 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
                 {"role": "assistant", "content": full_reply}
             )
         else:
-            st.session_state["messages"].pop()
-            st.error(f"⚠️ Hindi nakakonekta sa AI ({last_error}). Pakisubukan ulit!") 
+          
