@@ -102,10 +102,10 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             role = "user" if m["role"] == "user" else "model"
             chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
-        # Mga aktibong Gemini models na siguradong gumagana
+        # Mga aktibong models na siguradong gumagana sa bagong API
         attempts = [
             ("gemini-2.5-flash", True),
-            ("gemini-2.5-flash-lite", False),
+            ("gemini-1.5-flash", False),
         ]
         full_reply = None
         last_error = ""
