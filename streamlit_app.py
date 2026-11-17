@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import google.generativeai as genai
 
 st.set_page_config(
