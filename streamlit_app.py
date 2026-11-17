@@ -1,5 +1,6 @@
  import streamlit as st
 from google import genai
+from google.genai.errors import APIError
 
 st.set_page_config(
     page_title="Molas AI Assistant",
@@ -49,11 +50,13 @@ with st.sidebar:
     if st.button("🗑️ Bagong Usapan", use_container_width=True):
         st.session_state["messages"] = []
         st.rerun()
-    st.caption("Powered by Gemini 3.8 Flash")
+    st.caption("Powered by Gemini")
+
 
 @st.cache_resource
 def get_client():
     return genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
 
 client = get_client()
 
@@ -95,21 +98,36 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             role = "user" if m["role"] == "user" else "model"
             chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
-        chat = client.chats.create(
-            model="gemini-3.8-flash",
-            history=chat_history[:-1],
-        )
+        models_to_try = ["gemini-3.8-flash", "gemini-2.5-flash-lite", "gemini-3.0-flash"]
+        full_reply = None
 
-        def stream_response():
-            response = chat.send_message_stream(
-                prompt,
-                config={"system_instruction": system_instruction},
+        for model_name in models_to_try:
+            try:
+                chat = client.chats.create(
+                    model=model_name,
+                    history=chat_history[:-1],
+                )
+
+                def stream_response():
+                    response = chat.send_message_stream(
+                        prompt,
+                        config={"system_instruction": system_instruction},
+                    )
+                    for chunk in response:
+                        if chunk.text:
+                            yield chunk.text
+
+                full_reply = st.write_stream(stream_response)
+                break
+            except APIError:
+                continue
+
+        if full_reply:
+            st.session_state["messages"].append(
+                {"role": "assistant", "content": full_reply}
             )
-            for chunk in response:
-                if chunk.text:
-                    yield chunk.text
-
-        full_reply = st.write_stream(stream_response)
-        st.session_state["messages"].append(
-            {"role": "assistant", "content": full_reply}
-        )
+        else:
+            st.session_state["messages"].pop()
+            st.warning(
+                "⏳ Medyo abala ang server ng AI ngayon. Pakisubukan ulit pagkalipas ng ilang segundo!"
+            )
