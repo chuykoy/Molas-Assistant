@@ -44,7 +44,7 @@ if prompt := st.chat_input("Mag-type kay Molas AI..."):
                 chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
             chat = client.chats.create(
-                model="gemini-2.5-flash",
+                model="gemini-3.8-flash",
                 history=chat_history[:-1],
             )
             response = chat.send_message(
