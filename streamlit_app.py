@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 from google import genai
 from google.genai.errors import APIError
 
@@ -102,25 +102,29 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             role = "user" if m["role"] == "user" else "model"
             chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
-        # Unahin ang pinakamabilis na model para instant ang sagot
-        models_to_try = ["gemini-2.5-flash-lite", "gemini-3.0-flash", "gemini-3.8-flash"]
+        # Subukan muna ang mga model na may Google Search, pagkatapos ay standard fallback
+        attempts = [
+            ("gemini-2.5-flash", True),
+            ("gemini-2.5-flash-lite", False),
+            ("gemini-3.0-flash", True),
+            ("gemini-3.0-flash", False),
+        ]
         full_reply = None
+        last_error = ""
 
-        for model_name in models_to_try:
+        for model_name, use_search in attempts:
             try:
                 chat = client.chats.create(
                     model=model_name,
                     history=chat_history[:-1],
                 )
 
+                cfg = {"system_instruction": system_instruction}
+                if use_search:
+                    cfg["tools"] = [{"google_search": {}}]
+
                 def stream_response():
-                    response = chat.send_message_stream(
-                        prompt,
-                        config={
-                            "system_instruction": system_instruction,
-                            "tools": [{"google_search": {}}],
-                        },
-                    )
+                    response = chat.send_message_stream(prompt, config=cfg)
                     sources = []
                     for chunk in response:
                         if chunk.text:
@@ -139,7 +143,8 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
 
                 full_reply = st.write_stream(stream_response)
                 break
-            except APIError:
+            except APIError as e:
+                last_error = str(e)
                 continue
 
         if full_reply:
@@ -148,6 +153,4 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             )
         else:
             st.session_state["messages"].pop()
-            st.warning(
-                "⏳ Medyo abala ang server ng AI ngayon. Pakisubukan ulit pagkalipas ng ilang segundo!"
-            ) 
+            st.error(f"⚠️ Hindi nakakonekta sa AI ({last_error}). Pakisubukan ulit!")
