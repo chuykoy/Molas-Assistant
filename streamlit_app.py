@@ -105,11 +105,12 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
         try:
             def stream_response():
                 response = client.models.generate_content_stream(
-                    model="gemini-3.8-flash",  # ✅ IN-UPDATE NA MODEL NAME
+                    model="gemini-3.1-flash-lite",
                     contents=contents,
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_INSTRUCTION,
                         temperature=0.7,
+                        max_output_tokens=512,
                     ),
                 )
                 for chunk in response:
