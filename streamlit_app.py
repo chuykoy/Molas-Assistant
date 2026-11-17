@@ -1,4 +1,4 @@
-  import streamlit as st
+import streamlit as stt
 from google import genai
 from google.genai.errors import APIError
 
