@@ -1,7 +1,6 @@
 import streamlit as st
 from google import genai
 from google.genai import types
-from google.genai.errors import APIError
 
 st.set_page_config(
     page_title="Molas AI Assistant",
@@ -10,7 +9,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ⚡ PAMPABILIS 1: I-define nang isang beses ang constant strings sa labas ng loop
 SYSTEM_INSTRUCTION = (
     "Ikaw si Molas AI, isang matulungin, magalang, at matalinong AI assistant "
     "na bihasa magsalita sa Tagalog at Taglish.\n\n"
@@ -92,7 +90,6 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar=AI_AVATAR):
-        # ⚡ PAMPABILIS 2: Huling 10 mensahe lang ang ipadala para hindi bumigat ang request
         recent_messages = st.session_state["messages"][-10:]
         contents = [
             {
@@ -108,13 +105,11 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
         try:
             def stream_response():
                 response = client.models.generate_content_stream(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.8-flash",  # ✅ IN-UPDATE NA MODEL NAME
                     contents=contents,
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_INSTRUCTION,
                         temperature=0.7,
-                        # ⚡ PAMPABILIS 3: I-off ang thinking delay para instant ang simula ng sagot
-                        thinking_config=types.ThinkingConfig(thinking_budget=0),
                     ),
                 )
                 for chunk in response:
