@@ -1,5 +1,6 @@
 import streamlit as st
 from google import genai
+from google.genai import types
 from google.genai.errors import APIError
 
 st.set_page_config(
@@ -7,6 +8,20 @@ st.set_page_config(
     page_icon="✨",
     layout="centered",
     initial_sidebar_state="collapsed",
+)
+
+# ⚡ PAMPABILIS 1: I-define nang isang beses ang constant strings sa labas ng loop
+SYSTEM_INSTRUCTION = (
+    "Ikaw si Molas AI, isang matulungin, magalang, at matalinong AI assistant "
+    "na bihasa magsalita sa Tagalog at Taglish.\n\n"
+    "MAHALAGANG LIMITASYON AT PATAKARAN:\n"
+    "1. Huwag sasagot ng mga malalalim o pribadong detalye tungkol sa totoong pagkakakilanlan, "
+    "personal na impormasyon, lokasyon, o pribadong buhay ng iyong creator/may-ari.\n"
+    "2. Limitahan ang sarili at tanggihan nang magalang ang mga hindi tamang tanong, "
+    "sensitibong paksa, o mga tanong na lumalampas sa iyong saklaw bilang AI assistant.\n"
+    "3. Kapag nagtanong ang user tungkol sa iyong pagkakakilanlan, sa creator mo, o ng mga "
+    "hindi tamang tanong, laging sumagot nang magalang ng:\n"
+    "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, molasjong7@gmail.com, o celso.m37@yahoo.com.'"
 )
 
 st.markdown(
@@ -77,23 +92,15 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar=AI_AVATAR):
-        system_instruction = (
-            "Ikaw si Molas AI, isang matulungin, magalang, at matalinong AI assistant "
-            "na bihasa magsalita sa Tagalog at Taglish.\n\n"
-            "MAHALAGANG LIMITASYON AT PATAKARAN:\n"
-            "1. Huwag sasagot ng mga malalalim o pribadong detalye tungkol sa totoong pagkakakilanlan, "
-            "personal na impormasyon, lokasyon, o pribadong buhay ng iyong creator/may-ari.\n"
-            "2. Limitahan ang sarili at tanggihan nang magalang ang mga hindi tamang tanong, "
-            "sensitibong paksa, o mga tanong na lumalampas sa iyong saklaw bilang AI assistant.\n"
-            "3. Kapag nagtanong ang user tungkol sa iyong pagkakakilanlan, sa creator mo, o ng mga "
-            "hindi tamang tanong, laging sumagot nang magalang ng:\n"
-            "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, molasjong7@gmail.com, o celso.m37@yahoo.com.'"
-        )
-
-        contents = []
-        for m in st.session_state["messages"]:
-            role = "user" if m["role"] == "user" else "model"
-            contents.append({"role": role, "parts": [{"text": m["content"]}]})
+        # ⚡ PAMPABILIS 2: Huling 10 mensahe lang ang ipadala para hindi bumigat ang request
+        recent_messages = st.session_state["messages"][-10:]
+        contents = [
+            {
+                "role": "user" if m["role"] == "user" else "model",
+                "parts": [{"text": m["content"]}],
+            }
+            for m in recent_messages
+        ]
 
         full_reply = None
         last_error = ""
@@ -103,10 +110,12 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
                 response = client.models.generate_content_stream(
                     model="gemini-2.5-flash",
                     contents=contents,
-                    config={
-                        "system_instruction": system_instruction,
-                        "temperature": 0.7,
-                    }
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_INSTRUCTION,
+                        temperature=0.7,
+                        # ⚡ PAMPABILIS 3: I-off ang thinking delay para instant ang simula ng sagot
+                        thinking_config=types.ThinkingConfig(thinking_budget=0),
+                    ),
                 )
                 for chunk in response:
                     if chunk.text:
@@ -121,6 +130,8 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
                 {"role": "assistant", "content": full_reply}
             )
         else:
+            error_msg = f"⚠️ Hindi nakakonekta sa AI ({last_error}). Pakisubukan ulit!"
+            st.error(error_msg)
             st.session_state["messages"].append(
-                {"role": "assistant", "content": f"⚠️ Hindi nakakonekta sa AI ({last_error}). Pakisubukan ulit!"}
+                {"role": "assistant", "content": error_msg}
             )
