@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 from google import genai
 from google.genai.errors import APIError
 
@@ -9,6 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Custom CSS para sa mas modern at malinis na UI
 st.markdown(
     """
     <style>
@@ -39,18 +40,20 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Modern Header
 st.markdown('<div class="modern-title">✨ Molas AI</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="modern-subtitle">Ang iyong matalinong Tagalog & Taglish AI partner</div>',
     unsafe_allow_html=True,
 )
 
+# Sidebar para sa mga settings at reset button
 with st.sidebar:
     st.header("⚙️ Mga Setting")
     if st.button("🗑️ Bagong Usapan", use_container_width=True):
         st.session_state["messages"] = []
         st.rerun()
-    st.caption("Powered by Gemini")
+    st.caption("Powered by Gemini + Google Search")
 
 
 @st.cache_resource
@@ -90,7 +93,8 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             "sensitibong paksa, o mga tanong na lumalampas sa iyong saklaw bilang AI assistant.\n"
             "3. Kapag nagtanong ang user tungkol sa iyong pagkakakilanlan, sa creator mo, o ng mga "
             "hindi tamang tanong, laging sumagot nang magalang ng:\n"
-           "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, molasjong7@gmail.com, o celso.m37@yahoo.com.'"
+            "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, molasjong7@gmail.com, o celso.m37@yahoo.com.'\n"
+            "4. Kapag naghanap ng impormasyon sa web, ibigay ang malinaw na sagot kasama ang mga link o website na pinagkunan kung mayroon."
         )
 
         chat_history = []
@@ -98,7 +102,8 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             role = "user" if m["role"] == "user" else "model"
             chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
-        models_to_try = ["gemini-3.8-flash", "gemini-2.5-flash-lite", "gemini-3.0-flash"]
+        # Unahin ang pinakamabilis na model para instant ang sagot
+        models_to_try = ["gemini-2.5-flash-lite", "gemini-3.0-flash", "gemini-3.8-flash"]
         full_reply = None
 
         for model_name in models_to_try:
@@ -111,11 +116,26 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
                 def stream_response():
                     response = chat.send_message_stream(
                         prompt,
-                        config={"system_instruction": system_instruction},
+                        config={
+                            "system_instruction": system_instruction,
+                            "tools": [{"google_search": {}}],
+                        },
                     )
+                    sources = []
                     for chunk in response:
                         if chunk.text:
                             yield chunk.text
+                        if chunk.candidates:
+                            meta = chunk.candidates[0].grounding_metadata
+                            if meta and meta.grounding_chunks:
+                                for g_chunk in meta.grounding_chunks:
+                                    if g_chunk.web and g_chunk.web.uri:
+                                        title = g_chunk.web.title or g_chunk.web.uri
+                                        link = f"- [{title}]({g_chunk.web.uri})"
+                                        if link not in sources:
+                                            sources.append(link)
+                    if sources:
+                        yield "\n\n**🌐 Mga Website na Pinagkunan:**\n" + "\n".join(sources)
 
                 full_reply = st.write_stream(stream_response)
                 break
