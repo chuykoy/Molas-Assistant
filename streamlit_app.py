@@ -1,59 +1,129 @@
-import streamlit as st
+ import streamlit as st
 from google import genai
 
-st.set_page_config(page_title="Molas AI Assistant", page_icon="🤖")
-st.title("🗣️ Molas AI Assistant")
+st.set_page_config(
+    page_title="Molas AI Assistant",
+    page_icon="✨",
+    layout="centered",
+    initial_sidebar_state="collapsed",
+)
+
+# Custom CSS para sa mas modern at malinis na UI
+st.markdown(
+    """
+    <style>
+    /* Itago ang default Streamlit header/footer clutter */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Modern gradient title */
+    .modern-title {
+        font-size: 2.3rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #4F46E5, #06B6D4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.2rem;
+    }
+    .modern-subtitle {
+        color: #6B7280;
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    /* Mas rounded at malinis na chat bubbles */
+    [data-testid="stChatMessage"] {
+        border-radius: 16px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# Modern Header
+st.markdown('<div class="modern-title">✨ Molas AI</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="modern-subtitle">Ang iyong matalinong Tagalog & Taglish AI partner</div>',
+    unsafe_allow_html=True,
+)
 
 # Sidebar para sa mga settings at reset button
 with st.sidebar:
     st.header("⚙️ Mga Setting")
-    if st.button("🗑️ I-clear ang Chat History", use_container_width=True):
+    if st.button("🗑️ Bagong Usapan", use_container_width=True):
         st.session_state["messages"] = []
         st.rerun()
-    st.info(
-        "Tip: Pwede mong i-reset ang usapan anumang oras gamit ang button sa itaas."
-    )
+    st.caption("Powered by Gemini 3.8 Flash")
 
-# Kunin ang API key mula sa Streamlit Secrets
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+# I-cache ang client para mas mabilis ang load
+@st.cache_resource
+def get_client():
+    return genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+
+client = get_client()
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
+# Welcome banner kapag wala pang messages
+if not st.session_state["messages"]:
+    st.info("👋 Kumusta! Ano ang maitutulong ko sa iyo ngayong araw?")
+
+# Custom avatars para sa User at AI
+USER_AVATAR = "🧑"
+AI_AVATAR = "✨"
+
 # Ipakita ang mga lumang messages
 for msg in st.session_state["messages"]:
-    with st.chat_message(msg["role"]):
+    avatar = USER_AVATAR if msg["role"] == "user" else AI_AVATAR
+    with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
 # Input ng user
-if prompt := st.chat_input("Mag-type kay Molas AI..."):
+if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
     st.session_state["messages"].append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
+    with st.chat_message("user", avatar=USER_AVATAR):
         st.markdown(prompt)
 
-    with st.chat_message("assistant"):
-        with st.spinner("Nag-iisip si Molas AI..."):
-            system_instruction = (
-                "Ikaw si Molas AI, isang matulungin, magalang, at matalinong AI "
-                "assistant na bihasa magsalita sa Tagalog at Taglish."
-            )
+    with st.chat_message("assistant", avatar=AI_AVATAR):
+        system_instruction = (
+            "Ikaw si Molas AI, isang matulungin, magalang, at matalinong AI assistant "
+            "na bihasa magsalita sa Tagalog at Taglish.\n\n"
+            "MAHALAGANG LIMITASYON AT PATAKARAN:\n"
+            "1. Huwag sasagot ng mga malalalim o pribadong detalye tungkol sa totoong pagkakakilanlan, "
+            "personal na impormasyon, lokasyon, o pribadong buhay ng iyong creator/may-ari.\n"
+            "2. Limitahan ang sarili at tanggihan nang magalang ang mga hindi tamang tanong, "
+            "sensitibong paksa, o mga tanong na lumalampas sa iyong saklaw bilang AI assistant.\n"
+            "3. Kapag nagtanong ang user tungkol sa iyong pagkakakilanlan, sa creator mo, o ng mga "
+            "hindi tamang tanong, laging sumagot nang magalang ng:\n"
+            "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, moplasjong7@gmail.com, o celso.m37@yahoo.com.'"
+        )
 
-            chat_history = []
-            for m in st.session_state["messages"]:
-                role = "user" if m["role"] == "user" else "model"
-                chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
+        chat_history = []
+        for m in st.session_state["messages"]:
+            role = "user" if m["role"] == "user" else "model"
+            chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
-            chat = client.chats.create(
-                model="gemini-3.8-flash",
-                history=chat_history[:-1],
-            )
-            response = chat.send_message(
+        chat = client.chats.create(
+            model="gemini-3.8-flash",
+            history=chat_history[:-1],
+        )
+
+        # Streaming response para real-time ang pag-type ng sagot
+        def stream_response():
+            response = chat.send_message_stream(
                 prompt,
-                config={
-                    "system_instruction": system_instruction,
-                },
+                config={"system_instruction": system_instruction},
             )
-            st.markdown(response.text)
-            st.session_state["messages"].append(
-                {"role": "assistant", "content": response.text}
-            )
+            for chunk in response:
+                if chunk.text:
+                    yield chunk.text
+
+        full_reply = st.write_stream(stream_response)
+        st.session_state["messages"].append(
+            {"role": "assistant", "content": full_reply}
+        )
