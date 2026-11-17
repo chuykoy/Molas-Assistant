@@ -96,11 +96,10 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             role = "user" if m["role"] == "user" else "model"
             chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
-        # Mayroon na ngayong Multiple Back-up Models (Fallback system)
+        # Naka-update na gamit ang bagong active models na suportado ng Google AI Studio
         attempts = [
             ("gemini-2.5-flash", True),
-            ("gemini-2.0-flash", True),
-            ("gemini-1.5-flash", False),
+            ("gemini-2.5-flash", False),
         ]
         full_reply = None
         last_error = ""
@@ -146,4 +145,4 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             )
         else:
             st.session_state["messages"].pop()
-            st.error(f"⚠️ Hindi nakakonekta sa AI ({last_error}). Pakisubukan ulit!")
+            st.error(f"⚠️ Hindi nakakonekta sa AI ({last_error}). Pakisubukan ulit!") 
