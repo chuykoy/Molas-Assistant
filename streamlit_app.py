@@ -97,7 +97,6 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
 
     with st.chat_message("assistant", avatar=AI_AVATAR):
         try:
-            # I-convert ang chat history para sa GenerativeModel
             history_format = []
             for m in st.session_state["messages"][:-1]:
                 role = "user" if m["role"] == "user" else "model"
