@@ -96,10 +96,11 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             role = "user" if m["role"] == "user" else "model"
             chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
-        # Naka-update na sa tamang active model
+        # Mayroon na ngayong Multiple Back-up Models (Fallback system)
         attempts = [
             ("gemini-2.5-flash", True),
-            ("gemini-2.5-flash", False),
+            ("gemini-2.0-flash", True),
+            ("gemini-1.5-flash", False),
         ]
         full_reply = None
         last_error = ""
@@ -135,7 +136,7 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
 
                 full_reply = st.write_stream(stream_response)
                 break
-            except APIError as e:
+            except Exception as e:
                 last_error = str(e)
                 continue
 
