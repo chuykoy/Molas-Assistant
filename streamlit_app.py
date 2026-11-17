@@ -90,7 +90,6 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, molasjong7@gmail.com, o celso.m37@yahoo.com.'"
         )
 
-        # Gamitin ang pinakabagong contents format para sa mabilis na pagtugon nang walang mabigat na chat session overhead
         contents = []
         for m in st.session_state["messages"]:
             role = "user" if m["role"] == "user" else "model"
@@ -102,7 +101,7 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
         try:
             def stream_response():
                 response = client.models.generate_content_stream(
-                    model="gemini-3.8-flash",
+                    model="gemini-2.5-flash",
                     contents=contents,
                     config={
                         "system_instruction": system_instruction,
