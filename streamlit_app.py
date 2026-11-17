@@ -1,4 +1,4 @@
-   streamlit as st
+import streamlit as st
 from google import genai
 from google.genai.errors import APIError
 
@@ -150,4 +150,4 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             st.session_state["messages"].pop()
             st.warning(
                 "⏳ Medyo abala ang server ng AI ngayon. Pakisubukan ulit pagkalipas ng ilang segundo!"
-            )
+            ) 
