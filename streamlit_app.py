@@ -100,7 +100,7 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             "sensitibong paksa, o mga tanong na lumalampas sa iyong saklaw bilang AI assistant.\n"
             "3. Kapag nagtanong ang user tungkol sa iyong pagkakakilanlan, sa creator mo, o ng mga "
             "hindi tamang tanong, laging sumagot nang magalang ng:\n"
-            "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, moplasjong7@gmail.com, o celso.m37@yahoo.com.'"
+            "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, molasjong7@gmail.com, o celso.m37@yahoo.com.'"
         )
 
         chat_history = []
