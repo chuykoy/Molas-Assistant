@@ -90,30 +90,30 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, molasjong7@gmail.com, o celso.m37@yahoo.com.'"
         )
 
-        chat_history = []
+        # Gamitin ang pinakabagong contents format para sa mabilis na pagtugon nang walang mabigat na chat session overhead
+        contents = []
         for m in st.session_state["messages"]:
             role = "user" if m["role"] == "user" else "model"
-            chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
+            contents.append({"role": role, "parts": [{"text": m["content"]}]})
 
         full_reply = None
         last_error = ""
 
         try:
-            # Gumagamit na ng mabilis na gemini-3.8-flash nang direkta nang walang mabigat na search delay
-            chat = client.chats.create(
-                model="gemini-3.8-flash",
-                history=chat_history[:-1],
-            )
-
-            cfg = {"system_instruction": system_instruction}
-
             def stream_response():
-                response = chat.send_message_stream(prompt, config=cfg)
+                response = client.models.generate_content_stream(
+                    model="gemini-3.8-flash",
+                    contents=contents,
+                    config={
+                        "system_instruction": system_instruction,
+                        "temperature": 0.7,
+                    }
+                )
                 for chunk in response:
                     if chunk.text:
                         yield chunk.text
 
-            full_reply = st.write_stream(stream_response)
+            full_reply = st.write_stream(stream_response())
         except Exception as e:
             last_error = str(e)
 
