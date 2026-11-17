@@ -1,5 +1,6 @@
-import streamlit as st
+ import streamlit as st
 from google import genai
+from google.genai.errors import APIError
 
 st.set_page_config(
     page_title="Molas AI Assistant",
@@ -12,11 +13,9 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Itago ang default Streamlit header/footer clutter */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* Modern gradient title */
     .modern-title {
         font-size: 2.3rem;
         font-weight: 800;
@@ -30,7 +29,6 @@ st.markdown(
         font-size: 1rem;
         margin-bottom: 1.5rem;
     }
-    /* Mas rounded at malinis na chat bubbles */
     [data-testid="stChatMessage"] {
         border-radius: 16px;
         padding: 1rem 1.2rem;
@@ -55,10 +53,9 @@ with st.sidebar:
     if st.button("🗑️ Bagong Usapan", use_container_width=True):
         st.session_state["messages"] = []
         st.rerun()
-    st.caption("Powered by Gemini 3.8 Flash")
+    st.caption("Powered by Gemini")
 
 
-# I-cache ang client para mas mabilis ang load
 @st.cache_resource
 def get_client():
     return genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
@@ -69,21 +66,17 @@ client = get_client()
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
-# Welcome banner kapag wala pang messages
 if not st.session_state["messages"]:
     st.info("👋 Kumusta! Ano ang maitutulong ko sa iyo ngayong araw?")
 
-# Custom avatars para sa User at AI
 USER_AVATAR = "🧑"
 AI_AVATAR = "✨"
 
-# Ipakita ang mga lumang messages
 for msg in st.session_state["messages"]:
     avatar = USER_AVATAR if msg["role"] == "user" else AI_AVATAR
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# Input ng user
 if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
     st.session_state["messages"].append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar=USER_AVATAR):
@@ -100,7 +93,7 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             "sensitibong paksa, o mga tanong na lumalampas sa iyong saklaw bilang AI assistant.\n"
             "3. Kapag nagtanong ang user tungkol sa iyong pagkakakilanlan, sa creator mo, o ng mga "
             "hindi tamang tanong, laging sumagot nang magalang ng:\n"
-            "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, molasjong7@gmail.com, o celso.m37@yahoo.com.'"
+            "'Kung may iba ka pang katanungan o nais linawin, mag-email ka na lang kay Chuy Molas o kay Chuy M. sa mga sumusunod na email: chuymolas219@gmail.com, moplasjong7@gmail.com, o celso.m37@yahoo.com.'"
         )
 
         chat_history = []
@@ -108,22 +101,36 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             role = "user" if m["role"] == "user" else "model"
             chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
-        chat = client.chats.create(
-            model="gemini-3.8-flash",
-            history=chat_history[:-1],
-        )
+        # Subukan ang primary model at lumipat sa backup kung high demand (503)
+        models_to_try = ["gemini-3.8-flash", "gemini-3.0-flash", "gemini-2.5-flash-lite"]
+        full_reply = None
 
-        # Streaming response para real-time ang pag-type ng sagot
-        def stream_response():
-            response = chat.send_message_stream(
-                prompt,
-                config={"system_instruction": system_instruction},
+        for model_name in models_to_try:
+            try:
+                chat = client.chats.create(
+                    model=model_name,
+                    history=chat_history[:-1],
+                )
+
+                def stream_response():
+                    response = chat.send_message_stream(
+                        prompt,
+                        config={"system_instruction": system_instruction},
+                    )
+                    for chunk in response:
+                        if chunk.text:
+                            yield chunk.text
+
+                full_reply = st.write_stream(stream_response)
+                break
+            except APIError:
+                continue
+
+        if full_reply:
+            st.session_state["messages"].append(
+                {"role": "assistant", "content": full_reply}
             )
-            for chunk in response:
-                if chunk.text:
-                    yield chunk.text
-
-        full_reply = st.write_stream(stream_response)
-        st.session_state["messages"].append(
-            {"role": "assistant", "content": full_reply}
-        )
+        else:
+            st.warning(
+                "⏳ Medyo abala ang server ng AI ngayon. Pakisubukan ulit pagkalipas ng ilang segundo!"
+            )
