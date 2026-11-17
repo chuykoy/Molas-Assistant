@@ -9,13 +9,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Custom CSS para sa mas modern at malinis na UI
 st.markdown(
     """
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    
     .modern-title {
         font-size: 2.3rem;
         font-weight: 800;
@@ -40,14 +38,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Modern Header
 st.markdown('<div class="modern-title">✨ Molas AI</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="modern-subtitle">Ang iyong matalinong Tagalog & Taglish AI partner</div>',
     unsafe_allow_html=True,
 )
 
-# Sidebar para sa mga settings at reset button
 with st.sidebar:
     st.header("⚙️ Mga Setting")
     if st.button("🗑️ Bagong Usapan", use_container_width=True):
@@ -55,11 +51,9 @@ with st.sidebar:
         st.rerun()
     st.caption("Powered by Gemini + Google Search")
 
-
 @st.cache_resource
 def get_client():
     return genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-
 
 client = get_client()
 
@@ -85,7 +79,7 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
     with st.chat_message("assistant", avatar=AI_AVATAR):
         system_instruction = (
             "Ikaw si Molas AI, isang matulungin, magalang, at matalinong AI assistant "
-            "na bihasa magsalita sa Tagalog at Taglish.\n\n"
+            "na bihasa magsalita sa Tagalog dan Taglish.\n\n"
             "MAHALAGANG LIMITASYON AT PATAKARAN:\n"
             "1. Huwag sasagot ng mga malalalim o pribadong detalye tungkol sa totoong pagkakakilanlan, "
             "personal na impormasyon, lokasyon, o pribadong buhay ng iyong creator/may-ari.\n"
