@@ -98,7 +98,7 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             role = "user" if m["role"] == "user" else "model"
             chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
-        # Ginagamit na lang natin ang stable at laging available na gemini-2.5-flash at gemini-1.5-flash
+        # Updated na mga active models na siguradong suportado ng bagong API
         attempts = [
             ("gemini-2.5-flash", True),
             ("gemini-1.5-flash", False),
