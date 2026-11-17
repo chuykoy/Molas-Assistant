@@ -51,9 +51,11 @@ with st.sidebar:
         st.rerun()
     st.caption("Powered by Gemini + Google Search")
 
+
 @st.cache_resource
 def get_client():
     return genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
 
 client = get_client()
 
@@ -79,7 +81,7 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
     with st.chat_message("assistant", avatar=AI_AVATAR):
         system_instruction = (
             "Ikaw si Molas AI, isang matulungin, magalang, at matalinong AI assistant "
-            "na bihasa magsalita sa Tagalog dan Taglish.\n\n"
+            "na bihasa magsalita sa Tagalog at Taglish.\n\n"
             "MAHALAGANG LIMITASYON AT PATAKARAN:\n"
             "1. Huwag sasagot ng mga malalalim o pribadong detalye tungkol sa totoong pagkakakilanlan, "
             "personal na impormasyon, lokasyon, o pribadong buhay ng iyong creator/may-ari.\n"
@@ -96,9 +98,10 @@ if prompt := st.chat_input("Magtanong kahit ano kay Molas AI..."):
             role = "user" if m["role"] == "user" else "model"
             chat_history.append({"role": role, "parts": [{"text": m["content"]}]})
 
+        # Ginagamit na lang natin ang stable at laging available na gemini-2.5-flash at gemini-1.5-flash
         attempts = [
             ("gemini-2.5-flash", True),
-            ("gemini-2.5-flash-lite", False),
+            ("gemini-1.5-flash", False),
         ]
         full_reply = None
         last_error = ""
